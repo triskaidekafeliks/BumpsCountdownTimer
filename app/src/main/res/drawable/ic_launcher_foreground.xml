@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Stopwatch Body -->
+    <path
+        android:fillColor="#FFE25D"
+        android:pathData="M54,34c-11.05,0 -20,8.95 -20,20s8.95,20 20,20s20,-8.95 20,-20S65.05,34 54,34zM54,70c-8.84,0 -16,-7.16 -16,-16s7.16,-16 16,-16s16,7.16 16,16S62.84,70 54,70z" />
+    <!-- Stopwatch Stem & Button -->
+    <path
+        android:fillColor="#FFE25D"
+        android:pathData="M52,26h4v8h-4zM48,24h12v2h-12z" />
+    <!-- Stopwatch Hand -->
+    <path
+        android:fillColor="#FFE25D"
+        android:pathData="M53,44h2v10h-2z" />
+    <!-- Stylized Oar -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M25,83l50,-50l4,-4l7,7l-4,4l-50,50z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M78,26l12,-12l6,6l-12,12z" />
+</vector>

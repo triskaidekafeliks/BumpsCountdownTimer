@@ -1,0 +1,4 @@
+<resources>
+
+    <style name="Theme.BumpsCountdownTimer" parent="Theme.MaterialComponents.Light" />
+</resources>
