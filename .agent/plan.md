@@ -1,27 +1,34 @@
 # Project Plan
 
-Bumps Countdown Timer (BumpsRaceTimer) is a specialized rowing start sequence timer. It handles a 4-minute to 1-minute to start countdown with sync capabilities and a 'Rolling Hold' mode for delays. The UI must be high-visibility with state-based colors and massive typography. It must use Kotlin, Compose, M3, and Haptic Feedback.
+Add a 'Scheduled Division Start' feature.
+- At startup or after a sequence, allow setting a division start time.
+- Count down to the 4-minute gun based on this time.
+- If the 4-minute gun is delayed (doesn't fire at the scheduled time), enter a 1-minute 'Rolling Hold' pattern similar to the existing one for the 1-minute gun.
+- Maintain existing sync and manual override capabilities.
 
 ## Project Brief
 
 # Bumps Countdown Timer - Project Brief
 
 ## Features
-- **Standard Bumps Start Sequence**: Automatically manages the countdown from the 4-minute warning to the 1-minute warning, culminating in the start signal.
-- **Precision Sync Buttons**: One-tap "4-min Sync" and "1-min Sync" buttons to immediately align the app's timer with the official race official's cannons.
-- **Intelligent Rolling Hold**: A specialized mode for delayed starts that loops a 60-second countdown with full-screen prompts and manual "1-Min Gun Now" overrides.
-- **High-Visibility State System**: Utilizes a massive "DisplayLarge" timer and dynamic background colors (Blue, Yellow, Orange, Red, Green) for instant status recognition in high-pressure environments.
-- **Haptic Pulse Feedback**: Tactile vibration alerts at every 60-second mark and a per-second haptic pulse during the critical final 10-second countdown.
+- **Scheduled Division Start**: Allows users to set a specific start time for a race division, automatically counting down to the initial 4-minute warning gun.
+- **Automated Start Sequence**: Orchestrates the transition from 4-minute (Blue) to 1-minute (Yellow) to the Start (Green) signals, ensuring the coxswain or official stays on track.
+- **Precision Sync & Overrides**: Includes high-latency "4-min Sync" and "1-min Sync" buttons to instantly align the app's internal clock with the official race cannons.
+- **Adaptive Rolling Hold**: Manages delays with a 60-second looping "Rolling Hold" (Orange) if the 4-minute or 1-minute guns are late, featuring full-screen "Did the cannon fire?" prompts and manual overrides.
+- **High-Visibility & Tactile UI**: Uses massive typography and a state-based color system for instant recognition in high-glare environments, supplemented by per-second haptic pulses during the final 10-second countdown.
+
 
 ## High-Level Technical Stack
-- **Kotlin**: Primary programming language for robust logic and concurrency.
-- **Jetpack Compose**: Modern declarative UI framework for the adaptive, high-visibility interface.
-- **Material 3**: Implementation of the latest Material Design system for a vibrant, energetic aesthetic.
-- **Android ViewModel & StateFlow**: Ensures timer state persistence across configuration changes (rotations) and handles reactive UI updates.
-- **System Clock Integration**: Uses `System.currentTimeMillis()` as the underlying source of truth to ensure zero clock drift during the sequence.
+- **Kotlin**: The primary language for modern, concise, and safe Android development.
+- **Jetpack Compose**: Used for building the high-visibility, reactive user interface.
+- **Material 3**: Implementation of the latest Android design system for a vibrant and accessible UI.
+- **ViewModel & StateFlow**: Ensures the countdown state is preserved across configuration changes and provides a reactive stream of data to the UI.
+- **Kotlin Coroutines**: Manages the precise timing loops and background processing for the countdown logic.
+- **KSP (Kotlin Symbol Processing)**: Used for efficient code generation and dependency processing.
+- **System Clock Integration**: Utilizes `System.currentTimeMillis()` as the absolute source of truth to prevent clock drift during the multi-minute sequence.
 
 ## Implementation Steps
-**Total Duration:** 52h 44m 29s
+**Total Duration:** 73h 23s
 
 ### Task_1_Core_Timer_Logic: Implement the core timer engine in a ViewModel using StateFlow and System.currentTimeMillis(). This includes the standard 4-minute to 1-minute countdown logic, state management for different phases (Warning, Prep, Final, Start), and the sync button functionality (4-min and 1-min sync).
 - **Status:** COMPLETED
@@ -70,4 +77,22 @@ Bumps Countdown Timer (BumpsRaceTimer) is a specialized rowing start sequence ti
   - All features (Sync, Rolling Hold, Haptics) work as expected
   - Critic agent verifies application stability and alignment with requirements
 - **Duration:** 10h 3m 27s
+
+### Task_6_Scheduled_Start_Logic: Enhance TimerViewModel to support a scheduled division start time. Implement the countdown logic leading up to the 4-minute warning and a new 'Rolling Hold' state specifically for delays of the 4-minute gun. Ensure existing sync and override functionalities remain intact.
+- **Status:** COMPLETED
+- **Updates:** Enhanced TimerViewModel to support a scheduled division start time. Implement the countdown logic leading up to the 4-minute warning and a new 'Rolling Hold' state specifically for delays of the 4-minute gun. Ensure existing sync and override functionalities remain intact. Added PRE_SEQUENCE state and setScheduledStartTime method. Updated Rolling Hold logic to adapt based on whether it's waiting for the 4-min or 1-min gun. Verified with unit tests in TimerViewModelTest.kt.
+- **Acceptance Criteria:**
+  - ViewModel correctly calculates time until the 4-minute gun
+  - 4-minute Rolling Hold loops every 60 seconds if not synced
+  - Manual sync overrides work correctly from the pre-sequence state
+- **Duration:** 10h 4m 19s
+
+### Task_7_Scheduled_UI_and_Verification: Update the UI to include a mechanism for setting the scheduled division start time. Add high-visibility states for the pre-sequence countdown and the 4-minute Rolling Hold prompts. Conduct a final build and verification to ensure stability and requirement alignment.
+- **Status:** COMPLETED
+- **Updates:** Fixed bugs related to the 'Schedule Start' button visibility and Rolling Hold prompt labels. Updated TimerScreen.kt to make the 'Schedule Start' button the primary action in IDLE state. Refined TimerViewModel.kt to intelligently set the isHoldingFor4Min flag when starting a Rolling Hold from IDLE or PRE_SEQUENCE. Improved state labels and button casing for a more professional, high-visibility aesthetic. verified with unit tests and previews.
+- **Acceptance Criteria:**
+  - UI allows setting or editing the division start time
+  - Pre-sequence and 4-min Rolling Hold states are visually distinct
+  - App builds successfully and passes all sequence tests without crashing
+- **Duration:** 10h 11m 35s
 

@@ -3,6 +3,8 @@ package com.example.bumpscountdowntimer.ui.timer
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -10,12 +12,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bumpscountdowntimer.ui.theme.*
+import java.util.Calendar
 import java.util.Locale
 
 @Composable
@@ -24,7 +31,10 @@ fun TimerScreen(
 ) {
     val remainingMillis by viewModel.remainingMillis.collectAsStateWithLifecycle()
     val timerState by viewModel.timerState.collectAsStateWithLifecycle()
+    val isHoldingFor4Min by viewModel.isHoldingFor4Min.collectAsStateWithLifecycle()
     val hapticFeedback = LocalHapticFeedback.current
+
+    var showTimePicker by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.hapticEvents.collect { type ->
@@ -42,6 +52,47 @@ fun TimerScreen(
         }
     }
 
+    TimerContent(
+        remainingMillis = remainingMillis,
+        timerState = timerState,
+        isHoldingFor4Min = isHoldingFor4Min,
+        onSync4Min = { viewModel.sync4Min() },
+        onSync1Min = { viewModel.sync1Min() },
+        onStartRollingHold = { viewModel.startRollingHold() },
+        onReset = { viewModel.reset() },
+        onShowTimePicker = { showTimePicker = true },
+        onRollingHoldComplete = { confirmed -> viewModel.onRollingHoldComplete(confirmed) }
+    )
+
+    if (showTimePicker) {
+        ScheduledTimePickerDialog(
+            onDismiss = { showTimePicker = false },
+            onConfirm = { hour, minute ->
+                val calendar = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, hour)
+                    set(Calendar.MINUTE, minute)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+                viewModel.setScheduledStartTime(calendar.timeInMillis)
+                showTimePicker = false
+            }
+        )
+    }
+}
+
+@Composable
+fun TimerContent(
+    remainingMillis: Long,
+    timerState: TimerState,
+    isHoldingFor4Min: Boolean,
+    onSync4Min: () -> Unit,
+    onSync1Min: () -> Unit,
+    onStartRollingHold: () -> Unit,
+    onReset: () -> Unit,
+    onShowTimePicker: () -> Unit,
+    onRollingHoldComplete: (Boolean) -> Unit
+) {
     val backgroundColor by animateColorAsState(
         targetValue = getBackgroundColorForState(timerState),
         label = "backgroundColor"
@@ -71,57 +122,89 @@ fun TimerScreen(
 
             // State Label
             Text(
-                text = timerState.name.replace("_", " "),
+                text = getStateLabel(timerState, isHoldingFor4Min),
                 style = MaterialTheme.typography.headlineMedium,
                 color = contentColor.copy(alpha = 0.8f)
             )
 
-            // Buttons
+            // Buttons Column
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                // Main Action for IDLE - Prominent Button
+                if (timerState == TimerState.IDLE) {
+                    Button(
+                        onClick = onShowTimePicker,
+                        modifier = Modifier.fillMaxWidth().height(72.dp),
+                        shape = MaterialTheme.shapes.large,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    ) {
+                        Icon(Icons.Default.Schedule, null)
+                        Spacer(Modifier.width(12.dp))
+                        Text("SCHEDULE DIVISION START", style = MaterialTheme.typography.titleLarge)
+                    }
+                }
+
+                // Sync Buttons Row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     SyncButton(
-                        text = "4-min Sync",
-                        onClick = { viewModel.sync4Min() },
+                        text = "4-MIN SYNC",
+                        onClick = onSync4Min,
                         modifier = Modifier.weight(1f)
                     )
                     SyncButton(
-                        text = "1-min Sync",
-                        onClick = { viewModel.sync1Min() },
+                        text = "1-MIN SYNC",
+                        onClick = onSync1Min,
                         modifier = Modifier.weight(1f)
                     )
                 }
 
+                // Secondary Control Row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     ElevatedButton(
-                        onClick = { viewModel.startRollingHold() },
+                        onClick = onStartRollingHold,
                         modifier = Modifier.weight(1f).height(64.dp),
                         colors = ButtonDefaults.elevatedButtonColors(
                             containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                             contentColor = MaterialTheme.colorScheme.onTertiaryContainer
                         )
                     ) {
-                        Text("Rolling Hold", style = MaterialTheme.typography.labelLarge)
+                        Text("ROLLING HOLD", style = MaterialTheme.typography.labelLarge)
                     }
+                    
                     ElevatedButton(
-                        onClick = { viewModel.reset() },
+                        onClick = onReset,
                         modifier = Modifier.weight(1f).height(64.dp),
+                        enabled = timerState != TimerState.IDLE,
                         colors = ButtonDefaults.elevatedButtonColors(
                             containerColor = MaterialTheme.colorScheme.errorContainer,
                             contentColor = MaterialTheme.colorScheme.onErrorContainer
                         )
                     ) {
-                        Text("Reset", style = MaterialTheme.typography.labelLarge)
+                        Text("RESET", style = MaterialTheme.typography.labelLarge)
+                    }
+                }
+
+                // Edit Schedule / Schedule Next - Text Button for secondary action
+                if (timerState == TimerState.PRE_SEQUENCE || timerState == TimerState.STARTED) {
+                    TextButton(
+                        onClick = onShowTimePicker,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        val label = if (timerState == TimerState.PRE_SEQUENCE) "EDIT SCHEDULED TIME" else "SCHEDULE NEXT DIVISION"
+                        Text(label, color = contentColor, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -131,7 +214,7 @@ fun TimerScreen(
         if (timerState == TimerState.ROLLING_HOLD && remainingMillis <= 0) {
             Surface(
                 modifier = Modifier.fillMaxSize(),
-                color = Color.Black.copy(alpha = 0.9f)
+                color = Color.Black.copy(alpha = 0.95f)
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -149,18 +232,106 @@ fun TimerScreen(
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         Button(
-                            onClick = { viewModel.onRollingHoldComplete(confirmed = true) },
-                            modifier = Modifier.weight(1f).height(80.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = StartGreen)
+                            onClick = { onRollingHoldComplete(true) },
+                            modifier = Modifier.weight(1f).height(88.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = StartGreen),
+                            shape = MaterialTheme.shapes.large
                         ) {
-                            Text("1-Min Gun Now", color = Color.Black, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
+                            Text(
+                                if (isHoldingFor4Min) "4-MIN GUN NOW" else "1-MIN GUN NOW",
+                                color = Color.Black,
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleLarge
+                            )
                         }
                         Button(
-                            onClick = { viewModel.onRollingHoldComplete(confirmed = false) },
-                            modifier = Modifier.weight(1f).height(80.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = FinalRed)
+                            onClick = { onRollingHoldComplete(false) },
+                            modifier = Modifier.weight(1f).height(88.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = FinalRed),
+                            shape = MaterialTheme.shapes.large
                         ) {
                             Text("NO", color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ScheduledTimePickerDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (Int, Int) -> Unit
+) {
+    val currentTime = Calendar.getInstance()
+    val timePickerState = rememberTimePickerState(
+        initialHour = currentTime.get(Calendar.HOUR_OF_DAY),
+        initialMinute = currentTime.get(Calendar.MINUTE),
+        is24Hour = true
+    )
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            shape = MaterialTheme.shapes.extraLarge,
+            tonalElevation = 6.dp,
+            modifier = Modifier
+                .width(IntrinsicSize.Min)
+                .height(IntrinsicSize.Min)
+                .background(
+                    shape = MaterialTheme.shapes.extraLarge,
+                    color = MaterialTheme.colorScheme.surface
+                )
+        ) {
+            // Fix: Wrap TimePicker in a local MaterialTheme with standard typography 
+            // to prevent it from inheriting the massive 120sp global displayLarge.
+            MaterialTheme(
+                typography = Typography(
+                    displayLarge = TextStyle(
+                        fontSize = 57.sp,
+                        lineHeight = 64.sp,
+                        letterSpacing = 0.sp
+                    ),
+                    displayMedium = TextStyle(
+                        fontSize = 45.sp,
+                        lineHeight = 52.sp,
+                        letterSpacing = 0.sp
+                    ),
+                    displaySmall = TextStyle(
+                        fontSize = 36.sp,
+                        lineHeight = 44.sp,
+                        letterSpacing = 0.sp
+                    ),
+                    labelLarge = TextStyle(
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        letterSpacing = 0.1.sp
+                    )
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "SET DIVISION START TIME",
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp)
+                    )
+                    TimePicker(state = timePickerState)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        TextButton(onClick = onDismiss) {
+                            Text("CANCEL")
+                        }
+                        TextButton(onClick = { onConfirm(timePickerState.hour, timePickerState.minute) }) {
+                            Text("OK")
                         }
                     }
                 }
@@ -178,6 +349,7 @@ fun SyncButton(
     ElevatedButton(
         onClick = onClick,
         modifier = modifier.height(64.dp),
+        shape = MaterialTheme.shapes.medium,
         colors = ButtonDefaults.elevatedButtonColors(
             containerColor = MaterialTheme.colorScheme.secondaryContainer,
             contentColor = MaterialTheme.colorScheme.onSecondaryContainer
@@ -191,11 +363,24 @@ fun SyncButton(
 private fun getBackgroundColorForState(state: TimerState): Color {
     return when (state) {
         TimerState.IDLE -> backgroundLight
+        TimerState.PRE_SEQUENCE -> Color(0xFF2C3E50) // Dark blue-gray for pre-sequence
         TimerState.WARNING_4_MIN -> WarningBlue
         TimerState.PREP_1_MIN -> PrepYellow
         TimerState.ROLLING_HOLD -> RollingOrange
         TimerState.FINAL_COUNTDOWN -> FinalRed
         TimerState.STARTED -> StartGreen
+    }
+}
+
+private fun getStateLabel(state: TimerState, isHoldingFor4Min: Boolean): String {
+    return when (state) {
+        TimerState.IDLE -> "READY"
+        TimerState.PRE_SEQUENCE -> "PRE-SEQUENCE: COUNTING TO 4-MIN GUN"
+        TimerState.WARNING_4_MIN -> "WARNING (4-MIN)"
+        TimerState.PREP_1_MIN -> "PREP (1-MIN)"
+        TimerState.FINAL_COUNTDOWN -> "FINAL COUNTDOWN"
+        TimerState.ROLLING_HOLD -> if (isHoldingFor4Min) "DELAY: WAITING FOR 4-MIN GUN" else "DELAY: WAITING FOR 1-MIN GUN"
+        TimerState.STARTED -> "STARTED!"
     }
 }
 
@@ -208,10 +393,56 @@ private fun formatMillis(millis: Long, state: TimerState): String {
     return String.format(Locale.getDefault(), "%d:%02d", minutes, seconds)
 }
 
-@Preview(showBackground = true, device = "spec:width=411dp,height=891dp")
+@Preview(showBackground = true, device = "spec:width=411dp,height=891dp", name = "Idle")
 @Composable
-fun TimerScreenPreview() {
+fun IdlePreview() {
     BumpsCountdownTimerTheme {
-        TimerScreen()
+        TimerContent(
+            remainingMillis = 0L,
+            timerState = TimerState.IDLE,
+            isHoldingFor4Min = false,
+            onSync4Min = {},
+            onSync1Min = {},
+            onStartRollingHold = {},
+            onReset = {},
+            onShowTimePicker = {},
+            onRollingHoldComplete = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, device = "spec:width=411dp,height=891dp", name = "Pre-Sequence")
+@Composable
+fun PreSequencePreview() {
+    BumpsCountdownTimerTheme {
+        TimerContent(
+            remainingMillis = 125000L,
+            timerState = TimerState.PRE_SEQUENCE,
+            isHoldingFor4Min = false,
+            onSync4Min = {},
+            onSync1Min = {},
+            onStartRollingHold = {},
+            onReset = {},
+            onShowTimePicker = {},
+            onRollingHoldComplete = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, device = "spec:width=411dp,height=891dp", name = "4-Min Rolling Hold")
+@Composable
+fun RollingHold4MinPreview() {
+    BumpsCountdownTimerTheme {
+        TimerContent(
+            remainingMillis = 0L,
+            timerState = TimerState.ROLLING_HOLD,
+            isHoldingFor4Min = true,
+            onSync4Min = {},
+            onSync1Min = {},
+            onStartRollingHold = {},
+            onReset = {},
+            onShowTimePicker = {},
+            onRollingHoldComplete = {}
+        )
     }
 }
