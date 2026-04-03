@@ -3,11 +3,11 @@
 This folder contains the latest build of the Bumps Countdown Timer app.
 
 ## Latest Version
-- **File**: `BumpsCountdownTimer-v1.0.apk`
+- **File**: `BumpsCountdownTimer-v1.0-debug.apk`
 
 ## Installation Instructions
 
-1.  **Download the APK**: Download the `BumpsCountdownTimer-v1.0.apk` file from this folder to your Android device.
+1.  **Download the APK**: Download the `BumpsCountdownTimer-v1.0-debug.apk` file from this folder to your Android device.
 2.  **Enable Unknown Sources**: If you haven't done this before, you may need to allow your browser or file manager to "Install unknown apps" in your device's security settings.
 3.  **Install**: Open the downloaded `.apk` file and tap **Install**.
 4.  **Launch**: Once installed, find the **Bumps Countdown** app in your app drawer and open it.
@@ -16,13 +16,13 @@ This folder contains the latest build of the Bumps Countdown Timer app.
 
 ### 1. Schedule a Division Start
 - Tap **SCHEDULE DIVISION START**.
-- Select the time the first gun (4-minute gun) is scheduled to fire.
-- The app will automatically calculate the countdown until that moment.
+- Select the time the division is scheduled to start.
+- The app will automatically start a countdown to when the 4-minute gun is due.
 
 ### 2. Synchronization
 - **4-MIN SYNC**: Use this if you hear the 4-minute gun and want to sync exactly to it.
 - **1-MIN SYNC**: Use this if you hear the 1-minute gun and want to sync exactly to it.
-- If you are late or early, the app will adjust the remaining time accordingly.
+- Otherwise, the app will guide you through the gun sequence if it's on time.
 
 ### 3. Rolling Hold
 - If a division is delayed, tap **ROLLING HOLD**.
