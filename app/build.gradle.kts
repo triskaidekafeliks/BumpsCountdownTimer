@@ -36,33 +36,6 @@ android {
     }
 }
 
-tasks.register("copyApkToReleases") {
-    dependsOn("assembleDebug")
-    group = "publishing"
-    description = "Copies and renames the debug APK to the Releases folder"
-    
-    doLast {
-        val versionName = android.defaultConfig.versionName
-        val apkSource = file("${layout.buildDirectory.get()}/outputs/apk/debug/app-debug.apk")
-        val releasesDir = file("${project.rootDir}/Releases")
-        val targetFileName = "BumpsCountdownTimer-v${versionName}-debug.apk"
-        
-        if (apkSource.exists()) {
-            // Delete old generic name if it exists in the destination
-            file("${releasesDir}/app-debug.apk").delete()
-            
-            copy {
-                from(apkSource)
-                into(releasesDir)
-                rename { targetFileName }
-            }
-            println("APK successfully copied to Releases/${targetFileName}")
-        } else {
-            throw GradleException("Source APK not found at ${apkSource.absolutePath}")
-        }
-    }
-}
-
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
