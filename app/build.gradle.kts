@@ -48,9 +48,22 @@ tasks.register<Copy>("exportDebugApk") {
     rename { "BumpsCountdownTimer-v${verName}-debug.apk" }
 }
 
+tasks.register<Copy>("exportReleaseApk") {
+    group = "publishing"
+    description = "Copies the release APK to a dedicated folder with a project-specific name"
+
+    val verName = android.defaultConfig.versionName
+    from(layout.buildDirectory.dir("outputs/apk/release"))
+    include("app-release-unsigned.apk")
+    // Use a specific sub-directory to avoid conflicts with AGP listing files
+    into(layout.buildDirectory.dir("outputs/exported-apk"))
+    rename { "BumpsCountdownTimer -v${verName}-release.apk" }
+}
+
 // Safely link to assembleDebug using afterEvaluate to ensure the task exists
 afterEvaluate {
     tasks.findByName("assembleDebug")?.finalizedBy("exportDebugApk")
+    tasks.findByName("assembleRelease")?.finalizedBy("exportReleaseApk")
 }
 
 dependencies {
