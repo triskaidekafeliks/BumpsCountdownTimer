@@ -34,7 +34,7 @@ fun TimerScreen(
     val isHoldingFor4Min by viewModel.isHoldingFor4Min.collectAsStateWithLifecycle()
     val hapticFeedback = LocalHapticFeedback.current
 
-    var showTimePicker by remember { mutableStateOf(false) }
+    val showTimePickerState = remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.hapticEvents.collect { type ->
@@ -60,13 +60,13 @@ fun TimerScreen(
         onSync1Min = { viewModel.sync1Min() },
         onStartRollingHold = { viewModel.startRollingHold() },
         onReset = { viewModel.reset() },
-        onShowTimePicker = { showTimePicker = true },
+        onShowTimePicker = { showTimePickerState.value = true },
         onRollingHoldComplete = { confirmed -> viewModel.onRollingHoldComplete(confirmed) }
     )
 
-    if (showTimePicker) {
+    if (showTimePickerState.value) {
         ScheduledTimePickerDialog(
-            onDismiss = { showTimePicker = false },
+            onDismiss = { showTimePickerState.value = false },
             onConfirm = { hour, minute ->
                 val calendar = Calendar.getInstance().apply {
                     set(Calendar.HOUR_OF_DAY, hour)
@@ -75,7 +75,7 @@ fun TimerScreen(
                     set(Calendar.MILLISECOND, 0)
                 }
                 viewModel.setScheduledStartTime(calendar.timeInMillis)
-                showTimePicker = false
+                showTimePickerState.value = false
             }
         )
     }
@@ -222,7 +222,7 @@ fun TimerContent(
                     modifier = Modifier.padding(32.dp)
                 ) {
                     Text(
-                        text = "Did the cannon fire?",
+                        text = if (isHoldingFor4Min) "Did the 4 minute gun go?" else "Did the 1 minute gun go?",
                         style = MaterialTheme.typography.headlineLarge,
                         color = Color.White,
                         modifier = Modifier.padding(bottom = 48.dp)
@@ -238,7 +238,7 @@ fun TimerContent(
                             shape = MaterialTheme.shapes.large
                         ) {
                             Text(
-                                if (isHoldingFor4Min) "4-MIN GUN NOW" else "1-MIN GUN NOW",
+                                "YES",
                                 color = Color.Black,
                                 fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.titleLarge
@@ -290,7 +290,7 @@ fun ScheduledTimePickerDialog(
             // Fix: Wrap TimePicker in a local MaterialTheme with standard typography 
             // to prevent it from inheriting the massive 120sp global displayLarge.
             MaterialTheme(
-                typography = Typography(
+                typography = MaterialTheme.typography.copy(
                     displayLarge = TextStyle(
                         fontSize = 57.sp,
                         lineHeight = 64.sp,

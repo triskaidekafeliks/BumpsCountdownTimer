@@ -67,23 +67,44 @@ class TimerViewModel(
 
     fun startRollingHold() {
         val currentState = _timerState.value
+        val now = clock.currentTimeMillis()
+
         // If we start hold while waiting for the sequence to begin or at the very start, it's for the 4-min gun.
-        _isHoldingFor4Min.value = (currentState == TimerState.IDLE || 
-                                  currentState == TimerState.PRE_SEQUENCE || 
-                                  currentState == TimerState.WARNING_4_MIN)
+        if (currentState != TimerState.ROLLING_HOLD) {
+            _isHoldingFor4Min.value = (currentState == TimerState.IDLE || 
+                                      currentState == TimerState.PRE_SEQUENCE)
+        }
         
-        startSequence(60 * 1000L, TimerState.ROLLING_HOLD)
+        if (currentState == TimerState.IDLE) {
+            startSequence(60 * 1000L, TimerState.ROLLING_HOLD)
+        } else {
+            // Preserve the "phase" of the seconds relative to the current target
+            var newTarget = targetTimeMillis
+            if (newTarget <= now) {
+                // If we are already past the target (e.g. 5s late), move to the next minute mark
+                while (newTarget <= now) {
+                    newTarget += 60000L
+                }
+            }
+            // If newTarget is in the future, we keep it. This ensures that if we press 
+            // "Rolling Hold" 5s before a gun, the prompt still appears at the original time.
+            
+            val duration = newTarget - now
+            startSequence(duration, TimerState.ROLLING_HOLD, now)
+        }
     }
 
-    private fun startSequence(duration: Long, state: TimerState) {
+    private fun startSequence(duration: Long, state: TimerState, baseTimeMillis: Long? = null) {
         val now = clock.currentTimeMillis()
-        targetTimeMillis = now + duration
+        val base = baseTimeMillis ?: now
+        targetTimeMillis = base + duration
+        _remainingMillis.value = (targetTimeMillis - now).coerceAtLeast(0)
         _timerState.value = state
-        _remainingMillis.value = duration
         resetHapticTrackers()
         
-        if (duration % 60000L == 0L) {
-            lastHapticMinute = duration / 1000L
+        val totalSeconds = (duration + 999) / 1000
+        if (totalSeconds > 0 && totalSeconds % 60 == 0L) {
+            lastHapticMinute = totalSeconds
             triggerHaptic(HapticType.MARK_60S)
         }
         
@@ -91,27 +112,18 @@ class TimerViewModel(
     }
 
     fun onRollingHoldComplete(confirmed: Boolean) {
+        val baseTime = targetTimeMillis
         if (confirmed) {
             if (_isHoldingFor4Min.value) {
-                sync4Min()
+                startSequence(4 * 60 * 1000L, TimerState.WARNING_4_MIN, baseTime)
             } else {
-                sync1Min()
+                startSequence(1 * 60 * 1000L, TimerState.PREP_1_MIN, baseTime)
             }
+            _isHoldingFor4Min.value = false
         } else {
-            // Start a 60s holding pattern loop
-            val now = clock.currentTimeMillis()
-            targetTimeMillis = now + (60 * 1000L)
-            _remainingMillis.value = 60000L
-            _timerState.value = TimerState.ROLLING_HOLD
-            resetHapticTrackers()
-            lastHapticMinute = 60L
-            triggerHaptic(HapticType.MARK_60S)
-            startTimerJob()
+            // Start a 60s holding pattern loop, removing latency
+            startSequence(60 * 1000L, TimerState.ROLLING_HOLD, baseTime)
         }
-    }
-
-    fun gunNow1Min() {
-        sync1Min()
     }
 
     private fun resetHapticTrackers() {

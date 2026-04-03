@@ -87,19 +87,94 @@ class TimerViewModelTest {
     }
 
     @Test
-    fun `confirming 4-min gun after delay starts 4-min sequence`() = runTest(timeout = 10.seconds) {
+    fun `confirming 4-min gun after delay removes latency from new timer`() = runTest(timeout = 10.seconds) {
         val viewModel = createViewModel()
-        val now = currentTime
-        viewModel.setScheduledStartTime(now + 2.minutes.inWholeMilliseconds) // Already late for 4-min gun
+        val gunTime = currentTime
+        viewModel.setScheduledStartTime(gunTime + 4.minutes.inWholeMilliseconds) // Scheduled for now
         
+        // It's exactly gun time, so it prompts immediately
         assertEquals(TimerState.ROLLING_HOLD, viewModel.timerState.value)
-        assertEquals(true, viewModel.isHoldingFor4Min.value)
         assertEquals(0L, viewModel.remainingMillis.value)
+        
+        // Wait 30 seconds before confirming
+        advanceTimeBy(30000)
+        runCurrent()
         
         viewModel.onRollingHoldComplete(confirmed = true)
         
+        // 4 minutes (240s) minus 30s latency = 210s remaining
         assertEquals(TimerState.WARNING_4_MIN, viewModel.timerState.value)
-        assertEquals(240000L, viewModel.remainingMillis.value)
+        assertEquals(210000L, viewModel.remainingMillis.value)
+        
+        viewModel.reset()
+    }
+
+    @Test
+    fun `rejecting gun prompt (No) after delay removes latency from hold timer`() = runTest(timeout = 10.seconds) {
+        val viewModel = createViewModel()
+        viewModel.startRollingHold()
+        
+        // Initial 60s countdown
+        assertEquals(60000L, viewModel.remainingMillis.value)
+        
+        // Let it run down and wait another 15s
+        advanceTimeBy(75000)
+        runCurrent()
+        
+        assertEquals(0L, viewModel.remainingMillis.value)
+        
+        // Press "No"
+        viewModel.onRollingHoldComplete(confirmed = false)
+        
+        // New 60s hold minus 15s latency = 45s remaining
+        assertEquals(TimerState.ROLLING_HOLD, viewModel.timerState.value)
+        assertEquals(45000L, viewModel.remainingMillis.value)
+        
+        viewModel.reset()
+    }
+
+    @Test
+    fun `pressing Rolling Hold button after gun time passed preserves the sync`() = runTest(timeout = 10.seconds) {
+        val viewModel = createViewModel()
+        // Set a target for 1 minute from now
+        viewModel.sync1Min()
+        
+        // Wait until 5 seconds AFTER the 1-min gun was due (65s total)
+        advanceTimeBy(65000)
+        runCurrent()
+        
+        // Current state would be STARTED (because sync1Min doesn't go to ROLLING_HOLD automatically on expiration, 
+        // it goes to STARTED). 
+        // Wait, check sync1Min behavior in ViewModel:
+        // startSequence(1 * 60 * 1000L, TimerState.PREP_1_MIN)
+        // determineState for 0 or less returns STARTED.
+        assertEquals(TimerState.STARTED, viewModel.timerState.value)
+        
+        // Now press "Rolling Hold"
+        viewModel.startRollingHold()
+        
+        // Original gun was at T+60s. We are at T+65s.
+        // Next sync point is T+120s.
+        // Time remaining should be 120 - 65 = 55s.
+        assertEquals(TimerState.ROLLING_HOLD, viewModel.timerState.value)
+        assertEquals(55000L, viewModel.remainingMillis.value)
+        
+        viewModel.reset()
+    }
+
+    @Test
+    fun `pressing Rolling Hold button before gun time preserves the sync`() = runTest(timeout = 10.seconds) {
+        val viewModel = createViewModel()
+        viewModel.sync1Min() // 60s remaining
+        
+        advanceTimeBy(10000) // 50s remaining
+        runCurrent()
+        
+        viewModel.startRollingHold()
+        
+        // Should still be 50s remaining, but now in ROLLING_HOLD state
+        assertEquals(TimerState.ROLLING_HOLD, viewModel.timerState.value)
+        assertEquals(50000L, viewModel.remainingMillis.value)
         
         viewModel.reset()
     }
@@ -113,28 +188,6 @@ class TimerViewModelTest {
         
         assertEquals(TimerState.ROLLING_HOLD, viewModel.timerState.value)
         assertEquals(true, viewModel.isHoldingFor4Min.value)
-        
-        viewModel.reset()
-    }
-
-    @Test
-    fun `rolling hold loop pattern works`() = runTest(timeout = 10.seconds) {
-        val viewModel = createViewModel()
-        viewModel.startRollingHold()
-        
-        // Initial state after startRollingHold: 60s countdown
-        assertEquals(60000L, viewModel.remainingMillis.value)
-        
-        advanceTimeBy(60100)
-        runCurrent()
-        
-        // Reached 0, should show prompt
-        assertEquals(0L, viewModel.remainingMillis.value)
-        assertEquals(TimerState.ROLLING_HOLD, viewModel.timerState.value)
-        
-        // Selecting "No" starts another 60s loop
-        viewModel.onRollingHoldComplete(confirmed = false)
-        assertEquals(60000L, viewModel.remainingMillis.value)
         
         viewModel.reset()
     }
