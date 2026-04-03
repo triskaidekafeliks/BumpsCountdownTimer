@@ -1,4 +1,13 @@
+# Android Studio / IntelliJ files
+.idea/
 *.iml
+*.iws
+*.ipr
+
+# Except for these
+!.idea/codeStyles/
+!.idea/runConfigurations/
+
 .gradle
 /local.properties
 /.idea/caches
@@ -13,3 +22,4 @@
 .externalNativeBuild
 .cxx
 local.properties
+input_images/
