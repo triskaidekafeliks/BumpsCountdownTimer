@@ -27,7 +27,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bumpscountdowntimer.ui.theme.*
 import java.util.Calendar
-import java.util.Locale
 
 @Composable
 fun TimerScreen(
@@ -420,11 +419,14 @@ private fun getStateLabel(state: TimerState, isHoldingFor4Min: Boolean): String 
 
 private fun formatMillis(millis: Long, state: TimerState): String {
     if (state == TimerState.STARTED) return "START!"
-    
+
     val totalSeconds = (millis + 999) / 1000 // Round up
     val minutes = totalSeconds / 60
     val seconds = totalSeconds % 60
-    return String.format(Locale.getDefault(), "%d:%02d", minutes, seconds)
+
+    // We use a string template and padStart instead of String.format to reduce
+    // object allocation overhead during high-frequency recomposition loops.
+    return "$minutes:${seconds.toString().padStart(2, '0')}"
 }
 
 @Preview(showBackground = true, device = "spec:width=411dp,height=891dp", name = "Idle")
