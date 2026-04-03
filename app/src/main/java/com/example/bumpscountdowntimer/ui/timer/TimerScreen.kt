@@ -304,34 +304,46 @@ fun ScheduledTimePickerDialog(
             modifier = Modifier
                 .width(IntrinsicSize.Min)
                 .height(IntrinsicSize.Min)
-                .background(
-                    shape = MaterialTheme.shapes.extraLarge,
-                    color = MaterialTheme.colorScheme.surface
-                )
         ) {
-            // Fix: Wrap TimePicker in a local MaterialTheme with standard typography 
+            // Fix: Wrap TimePicker in a local MaterialTheme with standard typography
             // to prevent it from inheriting the massive 120sp global displayLarge.
             MaterialTheme(
                 typography = MaterialTheme.typography.copy(
                     displayLarge = TextStyle(
+                        fontWeight = FontWeight.Normal,
                         fontSize = 57.sp,
                         lineHeight = 64.sp,
-                        letterSpacing = 0.sp
+                        letterSpacing = (-0.25).sp
                     ),
                     displayMedium = TextStyle(
+                        fontWeight = FontWeight.Normal,
                         fontSize = 45.sp,
                         lineHeight = 52.sp,
                         letterSpacing = 0.sp
                     ),
                     displaySmall = TextStyle(
+                        fontWeight = FontWeight.Normal,
                         fontSize = 36.sp,
                         lineHeight = 44.sp,
                         letterSpacing = 0.sp
                     ),
                     labelLarge = TextStyle(
+                        fontWeight = FontWeight.Medium,
                         fontSize = 14.sp,
                         lineHeight = 20.sp,
                         letterSpacing = 0.1.sp
+                    ),
+                    labelMedium = TextStyle(
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp,
+                        letterSpacing = 0.5.sp
+                    ),
+                    labelSmall = TextStyle(
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 11.sp,
+                        lineHeight = 16.sp,
+                        letterSpacing = 0.5.sp
                     )
                 )
             ) {
