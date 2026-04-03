@@ -1,5 +1,10 @@
 package com.example.bumpscountdowntimer.ui.timer
 
+import android.content.Context
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -10,8 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -32,7 +36,16 @@ fun TimerScreen(
     val remainingMillis by viewModel.remainingMillis.collectAsStateWithLifecycle()
     val timerState by viewModel.timerState.collectAsStateWithLifecycle()
     val isHoldingFor4Min by viewModel.isHoldingFor4Min.collectAsStateWithLifecycle()
-    val hapticFeedback = LocalHapticFeedback.current
+    val context = LocalContext.current
+    val vibrator = remember {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            vibratorManager.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
+    }
 
     val showTimePickerState = remember { mutableStateOf(false) }
 
@@ -40,13 +53,13 @@ fun TimerScreen(
         viewModel.hapticEvents.collect { type ->
             when (type) {
                 HapticType.MARK_60S -> {
-                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                    vibrate(vibrator, 500)
                 }
                 HapticType.TICK_1S -> {
-                    hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    vibrate(vibrator, 100)
                 }
                 HapticType.START -> {
-                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                    vibrate(vibrator, 1500)
                 }
             }
         }
@@ -78,6 +91,15 @@ fun TimerScreen(
                 showTimePickerState.value = false
             }
         )
+    }
+}
+
+private fun vibrate(vibrator: Vibrator, duration: Long) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        vibrator.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE))
+    } else {
+        @Suppress("DEPRECATION")
+        vibrator.vibrate(duration)
     }
 }
 
