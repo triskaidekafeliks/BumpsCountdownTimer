@@ -101,8 +101,8 @@ class TimerViewModel(
     private fun calculateNextTargetTime(now: Long): Long {
         var newTarget = targetTimeMillis
         // If we are already past the target (e.g. 5s late), move to the next minute mark
-        while (newTarget <= now) {
-            newTarget += ONE_MINUTE_MILLIS
+        if (newTarget <= now) {
+            newTarget += ((now - newTarget) / ONE_MINUTE_MILLIS + 1) * ONE_MINUTE_MILLIS
         }
         return newTarget
     }
