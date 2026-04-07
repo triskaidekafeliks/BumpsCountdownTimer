@@ -262,7 +262,8 @@ class TimerViewModelTest {
         advanceTimeBy(60000)
         runCurrent()
 
-        // The last event should be START
+        // The last event should be START, and there should be 11 events total (10 ticks + 1 start).
+        assertEquals(11, events.size)
         assertEquals(HapticType.START, events.last())
 
         viewModel.reset()
