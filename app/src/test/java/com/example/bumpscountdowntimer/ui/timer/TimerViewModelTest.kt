@@ -191,4 +191,36 @@ class TimerViewModelTest {
         
         viewModel.reset()
     }
+
+    @Test
+    fun `reset resets all state flows to default values`() = runTest(timeout = 10.seconds) {
+        val viewModel = createViewModel()
+
+        // 1. Test reset from a state where isHoldingFor4Min is true
+        viewModel.startRollingHold()
+        assertEquals(TimerState.ROLLING_HOLD, viewModel.timerState.value)
+        assertEquals(true, viewModel.isHoldingFor4Min.value)
+
+        viewModel.reset()
+        assertEquals(TimerState.IDLE, viewModel.timerState.value)
+        assertEquals(0L, viewModel.remainingMillis.value)
+        assertEquals(false, viewModel.isHoldingFor4Min.value)
+
+        // 2. Test reset from a state with positive remainingMillis
+        viewModel.sync4Min()
+        assertEquals(TimerState.WARNING_4_MIN, viewModel.timerState.value)
+        assertEquals(240000L, viewModel.remainingMillis.value)
+
+        viewModel.reset()
+        assertEquals(TimerState.IDLE, viewModel.timerState.value)
+        assertEquals(0L, viewModel.remainingMillis.value)
+
+        // 3. Ensure timer job is stopped (remainingMillis doesn't change after advanceTime)
+        viewModel.sync1Min()
+        viewModel.reset()
+        advanceTimeBy(5000)
+        runCurrent()
+        assertEquals(0L, viewModel.remainingMillis.value)
+        assertEquals(TimerState.IDLE, viewModel.timerState.value)
+    }
 }
