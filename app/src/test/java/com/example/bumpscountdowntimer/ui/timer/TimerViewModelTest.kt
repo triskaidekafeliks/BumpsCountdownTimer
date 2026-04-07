@@ -2,6 +2,7 @@ package com.example.bumpscountdowntimer.ui.timer
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.*
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -189,6 +190,94 @@ class TimerViewModelTest {
         assertEquals(TimerState.ROLLING_HOLD, viewModel.timerState.value)
         assertEquals(true, viewModel.isHoldingFor4Min.value)
         
+        viewModel.reset()
+    }
+
+    @Test
+    fun `hapticEvents emits 60s mark at minute boundaries`() = runTest(timeout = 10.seconds) {
+        val viewModel = createViewModel()
+        val events = mutableListOf<HapticType>()
+
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.hapticEvents.collect { events.add(it) }
+        }
+
+        // Start a 4 minute sequence
+        viewModel.sync4Min() // Emits MARK_60S at 4m
+        runCurrent()
+
+        assertEquals(listOf(HapticType.MARK_60S), events)
+
+        // Advance 1 minute
+        advanceTimeBy(60000)
+        runCurrent()
+
+        assertEquals(listOf(HapticType.MARK_60S, HapticType.MARK_60S), events)
+
+        // Advance another minute
+        advanceTimeBy(60000)
+        runCurrent()
+
+        assertEquals(listOf(HapticType.MARK_60S, HapticType.MARK_60S, HapticType.MARK_60S), events)
+
+        viewModel.reset()
+    }
+
+    @Test
+    fun `hapticEvents emits tick 1s during final 10 seconds`() = runTest(timeout = 10.seconds) {
+        val viewModel = createViewModel()
+        val events = mutableListOf<HapticType>()
+
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.hapticEvents.collect { events.add(it) }
+        }
+
+        // Start 1 minute sequence
+        viewModel.sync1Min()
+        runCurrent()
+        events.clear() // Clear initial MARK_60S
+
+        // Advance to 10 seconds remaining
+        advanceTimeBy(50000)
+        runCurrent()
+
+        // At exactly 10s remaining, it should emit TICK_1S
+        assertEquals(listOf(HapticType.TICK_1S), events)
+
+        // Advance 1 second
+        advanceTimeBy(1000)
+        runCurrent()
+        assertEquals(listOf(HapticType.TICK_1S, HapticType.TICK_1S), events)
+
+        // Advance 8 more seconds to 1 second remaining
+        advanceTimeBy(8000)
+        runCurrent()
+        assertEquals(10, events.size)
+        assertEquals(HapticType.TICK_1S, events.last())
+
+        viewModel.reset()
+    }
+
+    @Test
+    fun `hapticEvents emits START at zero`() = runTest(timeout = 10.seconds) {
+        val viewModel = createViewModel()
+        val events = mutableListOf<HapticType>()
+
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.hapticEvents.collect { events.add(it) }
+        }
+
+        viewModel.sync1Min()
+        runCurrent()
+        events.clear() // Clear initial MARK_60S
+
+        // Advance past zero
+        advanceTimeBy(60000)
+        runCurrent()
+
+        // The last event should be START
+        assertEquals(HapticType.START, events.last())
+
         viewModel.reset()
     }
 
