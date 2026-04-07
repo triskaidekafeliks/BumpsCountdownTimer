@@ -71,33 +71,40 @@ class TimerViewModel(
         startSequence(ONE_MINUTE_MILLIS, TimerState.PREP_1_MIN)
     }
 
+    private fun updateHoldState(currentState: TimerState) {
+        if (currentState != TimerState.ROLLING_HOLD) {
+            _isHoldingFor4Min.value = (currentState == TimerState.IDLE ||
+                                      currentState == TimerState.PRE_SEQUENCE)
+        }
+    }
+
     fun startRollingHold() {
         val currentState = _timerState.value
         val now = clock.currentTimeMillis()
 
         // If we start hold while waiting for the sequence to begin or at the very start, it's for the 4-min gun.
-        if (currentState != TimerState.ROLLING_HOLD) {
-            _isHoldingFor4Min.value = (currentState == TimerState.IDLE || 
-                                      currentState == TimerState.PRE_SEQUENCE)
-        }
+        updateHoldState(currentState)
         
         if (currentState == TimerState.IDLE) {
             startSequence(ONE_MINUTE_MILLIS, TimerState.ROLLING_HOLD)
         } else {
             // Preserve the "phase" of the seconds relative to the current target
-            var newTarget = targetTimeMillis
-            if (newTarget <= now) {
-                // If we are already past the target (e.g. 5s late), move to the next minute mark
-                while (newTarget <= now) {
-                    newTarget += ONE_MINUTE_MILLIS
-                }
-            }
+            val newTarget = calculateNextTargetTime(now)
             // If newTarget is in the future, we keep it. This ensures that if we press 
             // "Rolling Hold" 5s before a gun, the prompt still appears at the original time.
             
             val duration = newTarget - now
             startSequence(duration, TimerState.ROLLING_HOLD, now)
         }
+    }
+
+    private fun calculateNextTargetTime(now: Long): Long {
+        var newTarget = targetTimeMillis
+        // If we are already past the target (e.g. 5s late), move to the next minute mark
+        if (newTarget <= now) {
+            newTarget += ((now - newTarget) / ONE_MINUTE_MILLIS + 1) * ONE_MINUTE_MILLIS
+        }
+        return newTarget
     }
 
     private fun startSequence(duration: Long, state: TimerState, baseTimeMillis: Long? = null) {
