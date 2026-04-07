@@ -206,19 +206,16 @@ class TimerViewModelTest {
         viewModel.sync4Min() // Emits MARK_60S at 4m
         runCurrent()
 
-        assertEquals(listOf(HapticType.MARK_60S), events)
+        val expectedEvents = mutableListOf(HapticType.MARK_60S)
+        assertEquals(expectedEvents, events)
 
-        // Advance 1 minute
-        advanceTimeBy(60000)
-        runCurrent()
-
-        assertEquals(listOf(HapticType.MARK_60S, HapticType.MARK_60S), events)
-
-        // Advance another minute
-        advanceTimeBy(60000)
-        runCurrent()
-
-        assertEquals(listOf(HapticType.MARK_60S, HapticType.MARK_60S, HapticType.MARK_60S), events)
+        // Advance minute by minute and check for new events
+        repeat(2) {
+            advanceTimeBy(60000)
+            runCurrent()
+            expectedEvents.add(HapticType.MARK_60S)
+            assertEquals(expectedEvents, events)
+        }
 
         viewModel.reset()
     }
