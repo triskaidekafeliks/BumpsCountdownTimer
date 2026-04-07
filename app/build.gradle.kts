@@ -40,10 +40,22 @@ android {
     }
 }
 
+tasks.register<Copy>("exportDebugApk") {
+    group = "publishing"
+    description = "Copies the debug APK to a dedicated folder with a project-specific name"
+
+    val verName = android.defaultConfig.versionName
+    from(layout.buildDirectory.dir("outputs/apk/debug"))
+    include("app-debug.apk")
+    // Use a specific sub-directory to avoid conflicts with AGP listing files
+    into(layout.buildDirectory.dir("outputs/exported-apk"))
+    rename { "BumpsCountdownTimer-v${verName}-debug.apk" }
+}
+
 tasks.register<Copy>("exportReleaseApk") {
     group = "publishing"
     description = "Copies the release APK to a dedicated folder with a project-specific name"
-    
+
     val verName = android.defaultConfig.versionName
     from(layout.buildDirectory.dir("outputs/apk/release"))
     include("app-release.apk")
@@ -52,7 +64,10 @@ tasks.register<Copy>("exportReleaseApk") {
     rename { "BumpsCountdownTimer-v${verName}-release.apk" }
 }
 
-// Ensure the export task runs after assembleRelease
+// Ensure the export tasks run after their respective assemble tasks
+tasks.matching { it.name == "assembleDebug" }.all {
+    finalizedBy("exportDebugApk")
+}
 tasks.matching { it.name == "assembleRelease" }.all {
     finalizedBy("exportReleaseApk")
 }
