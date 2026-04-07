@@ -20,7 +20,11 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            // Using debug signing for release builds to facilitate easy side-loading for
+            // GitHub releases, as requested. Note: Use a private keystore for Play Store.
+            signingConfig = signingConfigs.getByName("debug")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -39,7 +43,7 @@ android {
 tasks.register<Copy>("exportDebugApk") {
     group = "publishing"
     description = "Copies the debug APK to a dedicated folder with a project-specific name"
-    
+
     val verName = android.defaultConfig.versionName
     from(layout.buildDirectory.dir("outputs/apk/debug"))
     include("app-debug.apk")
@@ -54,16 +58,18 @@ tasks.register<Copy>("exportReleaseApk") {
 
     val verName = android.defaultConfig.versionName
     from(layout.buildDirectory.dir("outputs/apk/release"))
-    include("app-release-unsigned.apk")
+    include("app-release.apk")
     // Use a specific sub-directory to avoid conflicts with AGP listing files
     into(layout.buildDirectory.dir("outputs/exported-apk"))
-    rename { "BumpsCountdownTimer -v${verName}-release.apk" }
+    rename { "BumpsCountdownTimer-v${verName}-release.apk" }
 }
 
-// Safely link to assembleDebug using afterEvaluate to ensure the task exists
-afterEvaluate {
-    tasks.findByName("assembleDebug")?.finalizedBy("exportDebugApk")
-    tasks.findByName("assembleRelease")?.finalizedBy("exportReleaseApk")
+// Ensure the export tasks run after their respective assemble tasks
+tasks.matching { it.name == "assembleDebug" }.all {
+    finalizedBy("exportDebugApk")
+}
+tasks.matching { it.name == "assembleRelease" }.all {
+    finalizedBy("exportReleaseApk")
 }
 
 dependencies {
