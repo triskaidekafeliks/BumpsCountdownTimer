@@ -17,6 +17,12 @@ class TimerViewModel(
     private val clock: Clock = SystemClock()
 ) : ViewModel() {
 
+    companion object {
+        private const val FOUR_MINUTES_MILLIS = 4 * 60 * 1000L
+        private const val ONE_MINUTE_MILLIS = 60 * 1000L
+        private const val TEN_SECONDS_MILLIS = 10 * 1000L
+    }
+
     private val _remainingMillis = MutableStateFlow(0L)
     val remainingMillis: StateFlow<Long> = _remainingMillis.asStateFlow()
 
@@ -37,7 +43,7 @@ class TimerViewModel(
 
     fun setScheduledStartTime(startTimeMillis: Long) {
         val now = clock.currentTimeMillis()
-        val fourMinGunTime = startTimeMillis - (4 * 60 * 1000L)
+        val fourMinGunTime = startTimeMillis - FOUR_MINUTES_MILLIS
         targetTimeMillis = fourMinGunTime
         
         if (fourMinGunTime <= now) {
@@ -57,12 +63,12 @@ class TimerViewModel(
 
     fun sync4Min() {
         _isHoldingFor4Min.value = false
-        startSequence(4 * 60 * 1000L, TimerState.WARNING_4_MIN)
+        startSequence(FOUR_MINUTES_MILLIS, TimerState.WARNING_4_MIN)
     }
 
     fun sync1Min() {
         _isHoldingFor4Min.value = false
-        startSequence(1 * 60 * 1000L, TimerState.PREP_1_MIN)
+        startSequence(ONE_MINUTE_MILLIS, TimerState.PREP_1_MIN)
     }
 
     fun startRollingHold() {
@@ -76,14 +82,14 @@ class TimerViewModel(
         }
         
         if (currentState == TimerState.IDLE) {
-            startSequence(60 * 1000L, TimerState.ROLLING_HOLD)
+            startSequence(ONE_MINUTE_MILLIS, TimerState.ROLLING_HOLD)
         } else {
             // Preserve the "phase" of the seconds relative to the current target
             var newTarget = targetTimeMillis
             if (newTarget <= now) {
                 // If we are already past the target (e.g. 5s late), move to the next minute mark
                 while (newTarget <= now) {
-                    newTarget += 60000L
+                    newTarget += ONE_MINUTE_MILLIS
                 }
             }
             // If newTarget is in the future, we keep it. This ensures that if we press 
@@ -115,14 +121,14 @@ class TimerViewModel(
         val baseTime = targetTimeMillis
         if (confirmed) {
             if (_isHoldingFor4Min.value) {
-                startSequence(4 * 60 * 1000L, TimerState.WARNING_4_MIN, baseTime)
+                startSequence(FOUR_MINUTES_MILLIS, TimerState.WARNING_4_MIN, baseTime)
             } else {
-                startSequence(1 * 60 * 1000L, TimerState.PREP_1_MIN, baseTime)
+                startSequence(ONE_MINUTE_MILLIS, TimerState.PREP_1_MIN, baseTime)
             }
             _isHoldingFor4Min.value = false
         } else {
             // Start a 60s holding pattern loop, removing latency
-            startSequence(60 * 1000L, TimerState.ROLLING_HOLD, baseTime)
+            startSequence(ONE_MINUTE_MILLIS, TimerState.ROLLING_HOLD, baseTime)
         }
     }
 
@@ -199,8 +205,8 @@ class TimerViewModel(
 
     private fun determineState(remaining: Long): TimerState {
         return when {
-            remaining > 60000L -> TimerState.WARNING_4_MIN
-            remaining > 10000L -> TimerState.PREP_1_MIN
+            remaining > ONE_MINUTE_MILLIS -> TimerState.WARNING_4_MIN
+            remaining > TEN_SECONDS_MILLIS -> TimerState.PREP_1_MIN
             remaining > 0L -> TimerState.FINAL_COUNTDOWN
             else -> TimerState.STARTED
         }
