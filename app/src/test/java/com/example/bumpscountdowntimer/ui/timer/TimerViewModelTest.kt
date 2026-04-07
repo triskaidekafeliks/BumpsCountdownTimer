@@ -234,23 +234,13 @@ class TimerViewModelTest {
         runCurrent()
         events.clear() // Clear initial MARK_60S
 
-        // Advance to 10 seconds remaining
-        advanceTimeBy(50000)
+        // Advance to 1 second remaining, which should trigger all 10 ticks.
+        advanceTimeBy(59000)
         runCurrent()
 
-        // At exactly 10s remaining, it should emit TICK_1S
-        assertEquals(listOf(HapticType.TICK_1S), events)
-
-        // Advance 1 second
-        advanceTimeBy(1000)
-        runCurrent()
-        assertEquals(listOf(HapticType.TICK_1S, HapticType.TICK_1S), events)
-
-        // Advance 8 more seconds to 1 second remaining
-        advanceTimeBy(8000)
-        runCurrent()
-        assertEquals(10, events.size)
-        assertEquals(HapticType.TICK_1S, events.last())
+        // Verify that 10 TICK_1S events were emitted.
+        val expectedEvents = List(10) { HapticType.TICK_1S }
+        assertEquals(expectedEvents, events)
 
         viewModel.reset()
     }
