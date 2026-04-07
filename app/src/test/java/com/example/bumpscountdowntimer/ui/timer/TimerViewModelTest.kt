@@ -191,4 +191,24 @@ class TimerViewModelTest {
         
         viewModel.reset()
     }
+
+    @Test
+    fun `reset resets all state flows to default values`() = runTest(timeout = 10.seconds) {
+        val viewModel = createViewModel()
+
+        // Change state from default
+        viewModel.sync4Min()
+
+        // Verify state is changed
+        assertEquals(TimerState.WARNING_4_MIN, viewModel.timerState.value)
+        assertEquals(240000L, viewModel.remainingMillis.value)
+
+        // Call reset
+        viewModel.reset()
+
+        // Verify all states are back to default
+        assertEquals(TimerState.IDLE, viewModel.timerState.value)
+        assertEquals(0L, viewModel.remainingMillis.value)
+        assertEquals(false, viewModel.isHoldingFor4Min.value)
+    }
 }
