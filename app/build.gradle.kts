@@ -21,6 +21,9 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
+            // Using debug signing for release builds to facilitate easy side-loading for
+            // GitHub releases, as requested. Note: Use a private keystore for Play Store.
             signingConfig = signingConfigs.getByName("debug")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -49,9 +52,9 @@ tasks.register<Copy>("exportReleaseApk") {
     rename { "BumpsCountdownTimer-v${verName}-release.apk" }
 }
 
-// Safely link to assembleRelease using afterEvaluate to ensure the task exists
-afterEvaluate {
-    tasks.findByName("assembleRelease")?.finalizedBy("exportReleaseApk")
+// Ensure the export task runs after assembleRelease
+tasks.matching { it.name == "assembleRelease" }.all {
+    finalizedBy("exportReleaseApk")
 }
 
 dependencies {
