@@ -270,6 +270,80 @@ class TimerViewModelTest {
     }
 
     @Test
+    fun `hapticEvents emits MARK_60S when PRE_SEQUENCE expires and transitions to ROLLING_HOLD`() = runTest(timeout = 10.seconds) {
+        val viewModel = createViewModel()
+        val events = mutableListOf<HapticType>()
+
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.hapticEvents.collect { events.add(it) }
+        }
+
+        val startTime = currentTime + 10.minutes.inWholeMilliseconds
+        viewModel.setScheduledStartTime(startTime)
+
+        // Wait until 4-min gun time
+        advanceTimeBy(6.minutes.inWholeMilliseconds)
+        runCurrent()
+
+        // Assert that MARK_60S was emitted during the transition to ROLLING_HOLD
+        assertEquals(TimerState.ROLLING_HOLD, viewModel.timerState.value)
+        assertEquals(true, events.contains(HapticType.MARK_60S))
+
+        viewModel.reset()
+    }
+
+    @Test
+    fun `hapticEvents trackers are reset when a new sequence starts`() = runTest(timeout = 10.seconds) {
+        val viewModel = createViewModel()
+        val events = mutableListOf<HapticType>()
+
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.hapticEvents.collect { events.add(it) }
+        }
+
+        // Start 1 minute sequence and let it tick down to final 10 seconds
+        viewModel.sync1Min()
+        advanceTimeBy(59000)
+        runCurrent()
+
+        // Ensure TICK_1S events are in the list
+        val expectedTicks = List(10) { HapticType.TICK_1S }
+        assertEquals(expectedTicks, events.filter { it == HapticType.TICK_1S })
+        events.clear()
+
+        // Restart 1 minute sequence to see if trackers were reset and TICK_1S can happen again
+        viewModel.sync1Min()
+        advanceTimeBy(59000)
+        runCurrent()
+
+        val expectedTicks = List(10) { HapticType.TICK_1S }
+        assertEquals(expectedTicks, events.filter { it == HapticType.TICK_1S })
+
+        viewModel.reset()
+    }
+
+    @Test
+    fun `no haptic events emitted in IDLE state`() = runTest(timeout = 10.seconds) {
+        val viewModel = createViewModel()
+        val events = mutableListOf<HapticType>()
+
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.hapticEvents.collect { events.add(it) }
+        }
+
+        // Initially in IDLE state
+        assertEquals(TimerState.IDLE, viewModel.timerState.value)
+
+        // Wait for some time to ensure no pulses happen in IDLE
+        advanceTimeBy(120000)
+        runCurrent()
+
+        assertEquals(true, events.isEmpty())
+
+        viewModel.reset()
+    }
+
+    @Test
     fun `reset resets all state flows to default values`() = runTest(timeout = 10.seconds) {
         val viewModel = createViewModel()
 
