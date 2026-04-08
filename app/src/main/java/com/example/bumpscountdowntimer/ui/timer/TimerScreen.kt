@@ -425,7 +425,7 @@ private fun formatMillis(millis: Long, state: TimerState): String {
     val seconds = totalSeconds % 60
 
     // We use a string template and padStart instead of String.format to reduce
-    // object allocation overhead during high-frequency recomposition loops.
+    // object allocation and CPU overhead during high-frequency recomposition loops.
     return "$minutes:${seconds.toString().padStart(2, '0')}"
 }
 
