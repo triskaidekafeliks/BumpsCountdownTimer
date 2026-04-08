@@ -85,16 +85,19 @@ class TimerViewModel(
         // If we start hold while waiting for the sequence to begin or at the very start, it's for the 4-min gun.
         updateHoldState(currentState)
         
-        if (currentState == TimerState.IDLE) {
-            startSequence(ONE_MINUTE_MILLIS, TimerState.ROLLING_HOLD)
+        val duration = calculateHoldDuration(currentState, now)
+        startSequence(duration, TimerState.ROLLING_HOLD, now)
+    }
+
+    private fun calculateHoldDuration(currentState: TimerState, now: Long): Long {
+        return if (currentState == TimerState.IDLE) {
+            ONE_MINUTE_MILLIS
         } else {
             // Preserve the "phase" of the seconds relative to the current target
             val newTarget = calculateNextTargetTime(now)
             // If newTarget is in the future, we keep it. This ensures that if we press 
             // "Rolling Hold" 5s before a gun, the prompt still appears at the original time.
-            
-            val duration = newTarget - now
-            startSequence(duration, TimerState.ROLLING_HOLD, now)
+            newTarget - now
         }
     }
 
