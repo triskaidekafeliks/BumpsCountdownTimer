@@ -316,8 +316,8 @@ class TimerViewModelTest {
         advanceTimeBy(59000)
         runCurrent()
 
-        val hasTick1SAgain = events.contains(HapticType.TICK_1S)
-        assertEquals(true, hasTick1SAgain)
+        val expectedTicks = List(10) { HapticType.TICK_1S }
+        assertEquals(expectedTicks, events.filter { it == HapticType.TICK_1S })
 
         viewModel.reset()
     }
