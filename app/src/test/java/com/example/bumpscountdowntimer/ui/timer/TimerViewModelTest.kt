@@ -307,8 +307,8 @@ class TimerViewModelTest {
         runCurrent()
 
         // Ensure TICK_1S events are in the list
-        val hasTick1S = events.contains(HapticType.TICK_1S)
-        assertEquals(true, hasTick1S)
+        val expectedTicks = List(10) { HapticType.TICK_1S }
+        assertEquals(expectedTicks, events.filter { it == HapticType.TICK_1S })
         events.clear()
 
         // Restart 1 minute sequence to see if trackers were reset and TICK_1S can happen again
