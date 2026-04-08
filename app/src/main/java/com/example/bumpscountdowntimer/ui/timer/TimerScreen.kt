@@ -304,6 +304,8 @@ fun ScheduledTimePickerDialog(
                 .width(IntrinsicSize.Min)
                 .height(IntrinsicSize.Min)
         ) {
+            // Wrap TimePicker in a local MaterialTheme with standard typography
+            // to prevent it from inheriting the massive 120sp global displayLarge.
             MaterialTheme(
                 typography = MaterialTheme.typography.copy(
                     displayLarge = TextStyle(
