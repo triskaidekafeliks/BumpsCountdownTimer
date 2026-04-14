@@ -396,7 +396,7 @@ fun SyncButton(
 private fun getBackgroundColorForState(state: TimerState): Color {
     return when (state) {
         TimerState.IDLE -> backgroundLight
-        TimerState.PRE_SEQUENCE -> Color(0xFF2C3E50) // Dark blue-gray for pre-sequence
+        TimerState.PRE_SEQUENCE -> PreSequenceBlue
         TimerState.WARNING_4_MIN -> WarningBlue
         TimerState.PREP_1_MIN -> PrepYellow
         TimerState.ROLLING_HOLD -> RollingOrange
