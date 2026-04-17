@@ -374,4 +374,33 @@ class TimerViewModelTest {
         assertEquals(0L, viewModel.remainingMillis.value)
         assertEquals(TimerState.IDLE, viewModel.timerState.value)
     }
+
+    @Test
+    fun `timerDisplayMillis throttles updates to 1Hz`() = runTest(timeout = 10.seconds) {
+        val viewModel = createViewModel()
+        val displayValues = mutableListOf<Long>()
+
+        val collectJob = launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.timerDisplayMillis.collect { displayValues.add(it) }
+        }
+
+        viewModel.sync1Min() // 60,000ms
+        runCurrent()
+
+        // Initial value (0) + 60,000
+        assertEquals(listOf(0L, 60000L), displayValues)
+
+        // Advance by 500ms - should NOT emit new value for display
+        advanceTimeBy(500)
+        runCurrent()
+        assertEquals(2, displayValues.size)
+
+        // Advance by another 600ms (total 1100ms) - should emit next second (59,000)
+        advanceTimeBy(600)
+        runCurrent()
+        assertEquals(listOf(0L, 60000L, 59000L), displayValues)
+
+        collectJob.cancel()
+        viewModel.reset()
+    }
 }
