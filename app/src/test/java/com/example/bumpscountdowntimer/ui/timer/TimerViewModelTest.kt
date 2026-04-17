@@ -47,8 +47,7 @@ class TimerViewModelTest {
         viewModel.startRollingHold()
 
         // Wait 50s until it prompts
-        advanceTimeBy(50000)
-        runCurrent()
+        advanceTimeBy(50.seconds.inWholeMilliseconds)
 
         assertEquals(TimerState.ROLLING_HOLD, viewModel.timerState.value)
         assertEquals(0L, viewModel.remainingMillis.value)
