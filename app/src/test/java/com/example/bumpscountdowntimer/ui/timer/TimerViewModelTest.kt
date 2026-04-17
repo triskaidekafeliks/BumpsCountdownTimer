@@ -59,7 +59,7 @@ class TimerViewModelTest {
 
         // 1 minute (60s) minus 20s latency = 40s remaining
         assertEquals(TimerState.PREP_1_MIN, viewModel.timerState.value)
-        assertEquals(40000L, viewModel.remainingMillis.value)
+        assertEquals(40.seconds.inWholeMilliseconds, viewModel.remainingMillis.value)
 
         viewModel.reset()
     }
