@@ -53,8 +53,7 @@ class TimerViewModelTest {
         assertEquals(0L, viewModel.remainingMillis.value)
 
         // Wait 20 seconds before confirming
-        advanceTimeBy(20000)
-        runCurrent()
+        advanceTimeBy(20.seconds.inWholeMilliseconds)
 
         viewModel.onRollingHoldComplete(confirmed = true)
 
