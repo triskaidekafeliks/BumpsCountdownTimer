@@ -25,6 +25,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import com.example.bumpscountdowntimer.ui.theme.*
 import java.util.Calendar
 
@@ -32,7 +34,15 @@ import java.util.Calendar
 fun TimerScreen(
     viewModel: TimerViewModel = viewModel()
 ) {
-    val remainingMillis by viewModel.remainingMillis.collectAsStateWithLifecycle()
+    // We throttle the remainingMillis flow to only emit when the rounded second changes.
+    // This reduces recomposition frequency from 10Hz to 1Hz, saving CPU and battery.
+    val remainingMillis by remember(viewModel.remainingMillis) {
+        viewModel.remainingMillis
+            .map { (it + 999) / 1000 }
+            .distinctUntilChanged()
+            .map { it * 1000 }
+    }.collectAsStateWithLifecycle(initialValue = viewModel.remainingMillis.value)
+
     val timerState by viewModel.timerState.collectAsStateWithLifecycle()
     val isHoldingFor4Min by viewModel.isHoldingFor4Min.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -417,7 +427,7 @@ private fun getStateLabel(state: TimerState, isHoldingFor4Min: Boolean): String 
     }
 }
 
-private fun formatMillis(millis: Long, state: TimerState): String {
+internal fun formatMillis(millis: Long, state: TimerState): String {
     if (state == TimerState.STARTED) return "START!"
 
     val totalSeconds = (millis + 999) / 1000 // Round up
@@ -425,7 +435,8 @@ private fun formatMillis(millis: Long, state: TimerState): String {
     val seconds = totalSeconds % 60
 
     // We use a string template and padStart instead of String.format to reduce
-    // object allocation and CPU overhead during high-frequency recomposition loops.
+    // object allocation and CPU overhead. Throttling at the collector ensures
+    // this is not called more than once per second.
     return "$minutes:${seconds.toString().padStart(2, '0')}"
 }
 
