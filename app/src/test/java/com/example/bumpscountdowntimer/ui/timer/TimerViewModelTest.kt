@@ -41,8 +41,7 @@ class TimerViewModelTest {
         viewModel.sync1Min()
 
         // Advance 10s
-        advanceTimeBy(10000)
-        runCurrent()
+        advanceTimeBy(10.seconds.inWholeMilliseconds)
 
         // Press Rolling Hold
         viewModel.startRollingHold()
