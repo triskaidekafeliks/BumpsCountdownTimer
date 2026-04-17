@@ -36,6 +36,38 @@ class TimerViewModelTest {
     }
 
     @Test
+    fun `confirming 1-min hold after delay removes latency from new timer`() = runTest(timeout = 10.seconds) {
+        val viewModel = createViewModel()
+        viewModel.sync1Min()
+
+        // Advance 10s
+        advanceTimeBy(10000)
+        runCurrent()
+
+        // Press Rolling Hold
+        viewModel.startRollingHold()
+
+        // Wait 50s until it prompts
+        advanceTimeBy(50000)
+        runCurrent()
+
+        assertEquals(TimerState.ROLLING_HOLD, viewModel.timerState.value)
+        assertEquals(0L, viewModel.remainingMillis.value)
+
+        // Wait 20 seconds before confirming
+        advanceTimeBy(20000)
+        runCurrent()
+
+        viewModel.onRollingHoldComplete(confirmed = true)
+
+        // 1 minute (60s) minus 20s latency = 40s remaining
+        assertEquals(TimerState.PREP_1_MIN, viewModel.timerState.value)
+        assertEquals(40000L, viewModel.remainingMillis.value)
+
+        viewModel.reset()
+    }
+
+    @Test
     fun `sync4Min sets remaining time to 4 minutes and state to WARNING_4_MIN`() = runTest(timeout = 10.seconds) {
         val viewModel = createViewModel()
         viewModel.sync4Min()
